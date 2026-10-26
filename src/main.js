@@ -20,9 +20,17 @@ let tasks = null; // V3 task boards — initialised after the rail constants exi
 /* ---------- renderer / scene / camera ---------- */
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// NITRO (26 Eki 2026): tümleşik GPU'da (Intel HD/UHD/Iris, Mali, Adreno, yazılım) hafif mod — 2048'lik VSM gölge + DPR>1
+// Intel HD 620 gibi kartlarda kasıyor. #perf=low ya da #perf=high ile elle seçilir; aksi hâlde ekran kartından algılanır.
+const PERF = (() => {
+  const h = new URLSearchParams(location.hash.slice(1)).get('perf'); if (h === 'low' || h === 'high') return h;
+  try { const gl = renderer.getContext(); const ext = gl.getExtension('WEBGL_debug_renderer_info'); const r = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return /Intel|UHD|HD Graphics|Iris|SwiftShader|llvmpipe|Mali|Adreno/i.test(r) ? 'low' : 'high'; } catch { return 'high'; }
+})();
+window.OFFICE_PERF = PERF;
+renderer.setPixelRatio(PERF === 'low' ? 1 : Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.VSMShadowMap;
+renderer.shadowMap.type = PERF === 'low' ? THREE.PCFSoftShadowMap : THREE.VSMShadowMap; // hafif modda PCF: VSM'nin blur geçişi yok
 
 const scene = new THREE.Scene();
 
@@ -102,7 +110,7 @@ scene.add(hemi);
 const key = new THREE.DirectionalLight(0xfff1dd, 2.2);
 key.position.set(-60, 90, 20);
 key.castShadow = true;
-key.shadow.mapSize.set(2048, 2048);
+key.shadow.mapSize.set(PERF === 'low' ? 1024 : 2048, PERF === 'low' ? 1024 : 2048);
 key.shadow.camera.left = -95; key.shadow.camera.right = 95;
 key.shadow.camera.top = 95; key.shadow.camera.bottom = -95;
 key.shadow.camera.far = 400;
