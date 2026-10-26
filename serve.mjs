@@ -41,7 +41,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { loadConfig, ROOT } from './config.mjs';
 import { layoutGraph, readVault, readOfficeNotes } from './graph-build.mjs';
-import { DEPTS, DEPT_KEYS } from './src/data.js';
+import { DEPTS, DEPT_KEYS, applyDepts } from './src/data.js';
 import * as mcp from './mcp.mjs';
 import { loadRoster } from './roster.mjs';
 import { loadSkills } from './skills.mjs';
@@ -54,6 +54,15 @@ import { normModel, modelFor, modelArgs, modelId, modelName, MODEL_KEYS, DEFAULT
 import { parseWhen, describe, valid as validWhen, untilText } from './src/when.js';
 
 const cfg = loadConfig();
+applyDepts(cfg.departments); // NITRO: the pods carry the names from office.config.json (a site per pod)
+const CODE_TIMEOUT = cfg.codeTimeout * 1000;
+/** NITRO: the repo folder a department's agents code in, or null when the department has none (or it is missing). */
+function repoFor(dept) {
+  const r = cfg.departments?.[dept]?.repo; if (!r) return null;
+  const p = path.resolve(ROOT, r);
+  if (!fs.existsSync(p)) { console.warn(`departments.${dept}.repo: ${p} yok — bu departman kod yazmadan çalışır`); return null; }
+  return p;
+}
 const HTML = path.join(ROOT, 'dist', 'command-centre-v2.html'); // built by build.mjs; shipped so npm start works without a build
 const DATA = path.join(ROOT, 'data');
 const FILE = path.join(DATA, 'tasks.json');
@@ -118,7 +127,7 @@ function ranOn(mu, want) {
   const fam = normModel(want) || cfg.model;
   return keys.find(k => k.includes(fam)) || keys.filter(k => !/haiku/.test(k)).sort((a, b) => (mu[b].outputTokens || 0) - (mu[a].outputTokens || 0))[0] || keys[0];
 }
-async function askX(system, user, { maxTokens = 4000, tools = true, timeout = RUN_TIMEOUT, model = cfg.model, effort = null } = {}) { // model: sonnet · opus · fable · effort: low…max or null = the model's own (src/models.js)
+async function askX(system, user, { maxTokens = 4000, tools = true, timeout = RUN_TIMEOUT, model = cfg.model, effort = null, cwd = null } = {}) { // model: sonnet · opus · fable · effort: low…max or null = the model's own (src/models.js) · cwd (NITRO): a repo folder → a real coding session there
   if (sdk) {
     const res = await sdk.messages.create({ model: modelId(model), max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] });
     if (res.stop_reason === 'refusal') throw new Error('Claude declined this request');
@@ -127,14 +136,20 @@ async function askX(system, user, { maxTokens = 4000, tools = true, timeout = RU
   }
   fs.mkdirSync(CLI_CWD, { recursive: true });
   const allowed = tools ? mcp.allowedTools() : [];
-  const args = ['-p', user, '--output-format', 'stream-json', '--verbose', '--no-session-persistence', '--system-prompt', system,
-    '--disallowedTools', 'Bash,Edit,Write,Read,Glob,Grep,Agent,NotebookEdit,Task' + (allowed.includes('WebFetch') ? '' : ',WebFetch,WebSearch')];
-  if (allowed.length) args.push('--allowedTools', allowed.join(','));
+  const code = !!cwd; // NITRO: a department with a repo → Claude Code's own system prompt stays, file tools and Bash are on, edits are pre-approved
+  if (code) timeout = Math.max(timeout, CODE_TIMEOUT);
+  const args = ['-p', user, '--output-format', 'stream-json', '--verbose', '--no-session-persistence', code ? '--append-system-prompt' : '--system-prompt', system];
+  if (code) {
+    args.push('--allowedTools', [...new Set([...allowed, 'Bash', 'Edit', 'Write', 'Read', 'Glob', 'Grep', 'MultiEdit', 'NotebookEdit', 'WebFetch', 'WebSearch', 'Agent'])].join(','), '--permission-mode', 'acceptEdits');
+  } else {
+    args.push('--disallowedTools', 'Bash,Edit,Write,Read,Glob,Grep,Agent,NotebookEdit,Task' + (allowed.includes('WebFetch') ? '' : ',WebFetch,WebSearch'));
+    if (allowed.length) args.push('--allowedTools', allowed.join(','));
+  }
   args.push(...(tools ? mcp.cliArgs() : ['--no-chrome'])); // V3.2 (16 Sep): the owner's Chrome, when tools.browser is on
   args.push(...modelArgs(model, effort));
   const env = { ...process.env }; delete env.CLAUDECODE; // the CLI refuses to nest inside another Claude Code session
   return new Promise((resolve, reject) => {
-    const p = spawn('claude', args, { cwd: CLI_CWD, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const p = spawn('claude', args, { cwd: code ? cwd : CLI_CWD, env, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '', err = '', text = '', used = [], gotResult = false, usageOut = null, modelUsed = null;
     const timer = setTimeout(() => { p.kill('SIGKILL'); reject(new Error(`Claude took longer than ${timeout / 1000} s`)); }, timeout);
     const feed = line => {
@@ -214,7 +229,7 @@ async function route(dept, text) {
   const system = `You are the router for ${cfg.name}, a business whose departments are run by AI agents. ` +
     'Pick the single best agent for the owner\'s request — an agent whose skills match the request is the right one — and return ONLY a JSON object — no prose, no code fences.';
   const user = `Department: ${d.name}\nAgents (id · name · role · what they do):\n${rosterText(dept)}\n\nOwner's request: "${text}"\n\n` +
-    'Return: {"agent":"<id from the list>","title":"<clean imperative task title, max 70 characters>","plan":["<step>","<step>","<step>"],"eta_minutes":<integer>,"why":"<one short sentence>","needs_ok":<true if doing this involves sending, posting, paying, deleting or changing anything outside this machine; false if it only reads and reports>}';
+    'Return: {"agent":"<id from the list>","title":"<clean imperative task title IN TURKISH, max 70 characters>","plan":["<step, in Turkish>","<step>","<step>"],"eta_minutes":<integer>,"why":"<one short sentence, in Turkish>","needs_ok":<true if doing this involves sending, posting, paying, deleting or changing anything outside this machine; false if it only reads and reports, or edits files in the department\'s own repository>}';
   const j = parseJSON(await ask(system, user, { maxTokens: 800, timeout: 150000, model: 'sonnet' })); // routing is a one-line JSON job: always Sonnet
   const valid = AGENTS.find(a => a.id === j.agent && a.department === dept);
   const agent = valid ? valid.id : (AGENTS.find(a => a.department === dept && a.lead) || AGENTS.find(a => a.department === dept)).id;
@@ -224,10 +239,12 @@ async function route(dept, text) {
 // the system prompt every agent run starts from: who it is, its brief, skills and lessons, its tools, the company, the notes for this task
 function agentSystem(a, index, read, { extra = '', words = 260 } = {}) {
   const d = DEPTS[a.department];
-  return `You are ${a.name}, ${a.role || 'an agent'}, in the ${d.name} department of ${cfg.name}. ${a.does}\n${agentBrief(a)}` + (extra ? `\n${extra}\n` : '') +
-    'Write the finished deliverable itself, not a description of what you would do. Plain text: a short heading, then short sections or bullets. ' +
-    `At most ${words} words unless a skill or the owner\'s instructions set a different shape — those win. No preamble, no sign-off. Ground it in the company notes below; where a fact is missing, make a reasonable assumption and mark it (assumed). ` +
-    'If you used a tool, say so in one line at the end ("Used: Gmail — searched the client thread").\n\n' +
+  const repo = repoFor(a.department); // NITRO: a coding department
+  const codeLine = repo ? `\nKOD ÇALIŞMASI: Bu departmanın yazılım deposu şu klasörde ve çalışma dizinin orası: ${repo}. İstenen değişikliği GERÇEKTEN yap: dosyaları oku, düzenle, gerekirse komut çalıştır ve varsa testleri koştur. git commit ve git push YAPMA; sahibi değişiklikleri kendisi inceleyip commit edecek. Depo dışına hiçbir şey gönderme. Sonunda kısa bir rapor yaz: değişen dosyalar, ne yapıldı, nasıl doğrulandı, kalan riskler.\n` : '';
+  return `You are ${a.name}, ${a.role || 'an agent'}, in the ${d.name} department of ${cfg.name}. ${a.does}\n${agentBrief(a)}` + (extra ? `\n${extra}\n` : '') + codeLine +
+    'HER ZAMAN TÜRKÇE YAZ. Write the finished deliverable itself, not a description of what you would do. Plain text: a short heading, then short sections or bullets. ' +
+    `At most ${repo ? Math.max(words, 400) : words} words unless a skill or the owner\'s instructions set a different shape — those win. No preamble, no sign-off. Ground it in the company notes below; where a fact is missing, make a reasonable assumption and mark it (varsayım). ` +
+    'If you used a tool, say so in one line at the end ("Kullanılan: Gmail — müşteri yazışması arandı").\n\n' +
     `${mcp.promptText(a.tools)}\n\nCOMPANY NOTES\n${businessContext(index)}\n\nNOTES YOU READ FOR THIS TASK\n${contextText(index, read)}`;
 }
 const modeLineFor = (mode, task) => mode === 'draft' ? '\nPrepare everything, but send, post, pay or change NOTHING outside this machine: the owner reads this first and approves it. End with one line saying exactly what will go out when approved (or that nothing needs to).'
@@ -256,7 +273,7 @@ async function run(task, feedback, mode) { // mode: undefined (a task from the b
   const user = `Task: ${task.title}\nOwner's request: ${task.text}` + (task.plan?.length ? `\nAgreed plan: ${task.plan.join(' → ')}` : '') + routineLine + modeLine +
     (feedback && mode !== 'approve' ? `\n\nThe owner reviewed your previous version and asked for changes: "${feedback}"\nPrevious version:\n${task.result}` : '');
   const { pick, eff } = pickFor(task, a);
-  const { text, tools, modelId: ran } = await askX(system, user, { model: pick.model, effort: eff.effort });
+  const { text, tools, modelId: ran } = await askX(system, user, { model: pick.model, effort: eff.effort, cwd: repoFor(a.department) });
   if (!text) throw new Error('Claude returned nothing');
   return { result: text, read, tools: toolKeys(tools), used: mcp.namesOf(tools), skills: skills.names(a), modelUsed: pick.model, modelFrom: pick.from, modelId: ran, effortUsed: eff.effort || '', effortFrom: eff.from };
 }
@@ -289,7 +306,7 @@ async function runTeam(task, mode) {
       const system = agentSystem(a, index, read, { extra: teams.teamSection({ me: a, lead, pieces: task.team.pieces, nameOf }), words: 220 });
       const user = `Task (the whole request, for context): ${task.title}\nOwner's request: ${task.text}\n\nYOUR PIECE: ${piece.title}\n${piece.text}` + routineLineFor(task) + (mode === 'draft' ? modeLineFor('draft', task) : '');
       const { pick, eff } = pickFor(task, a);
-      const { text, tools, modelId: ran } = await askX(system, user, { model: pick.model, effort: eff.effort });
+      const { text, tools, modelId: ran } = await askX(system, user, { model: pick.model, effort: eff.effort, cwd: repoFor(a.department) });
       const { body, messages } = teams.parseMessages(text, ids);
       Object.assign(piece, { result: body || '(empty)', tools: toolKeys(tools), used: mcp.namesOf(tools), read, modelId: ran, error: !text });
       for (const m of messages) task.team.messages.push({ from: a.id, to: m.to === lead.id ? 'lead' : m.to, text: m.text, at: Date.now() });
@@ -308,7 +325,7 @@ async function runTeamLead(task, feedback, mode) {
   const system = agentSystem(lead, index, read, { extra: `TEAM\nYou lead this team. The pieces below were done by your teammates (one of them may be yours). You write the finished deliverable from them.`, words: 450 });
   const user = teams.synthPrompt({ task, pieces: tm.pieces || [], messages: tm.messages || [], nameOf, feedback: mode === 'approve' ? null : feedback }) + routineLineFor(task) + modeLineFor(mode, task);
   const { pick, eff } = pickFor(task, lead);
-  const { text, tools, modelId: ran } = await askX(system, user, { model: pick.model, effort: eff.effort, maxTokens: 6000 });
+  const { text, tools, modelId: ran } = await askX(system, user, { model: pick.model, effort: eff.effort, maxTokens: 6000, cwd: repoFor(lead.department) });
   if (!text) throw new Error('Claude returned nothing');
   const allTools = [...new Set([...(tm.pieces || []).flatMap(p => p.tools || []), ...toolKeys(tools)])];
   const allUsed = [...new Set([...(tm.pieces || []).flatMap(p => p.used || []), ...mcp.namesOf(tools)])];
@@ -331,11 +348,12 @@ async function chat(agentId, text, history) {
   const read = relevantNotes(index, a.department, text, 3);
   const mine = load().filter(t => t.agent === agentId).slice(-6).map(t => `- [${t.state}] ${t.title}`).join('\n');
   const system = `You are ${a.name}, ${a.role || 'an agent'}, in the ${d.name} department of ${cfg.name}. ${a.does}\n${agentBrief(a)}` +
-    'You are talking to the owner. Answer as this agent, in first person, briefly (under 120 words unless asked for detail), plainly, no hype. ' +
+    'HER ZAMAN TÜRKÇE CEVAP VER. You are talking to the owner. Answer as this agent, in first person, briefly (under 120 words unless asked for detail), plainly, no hype. ' +
+    (repoFor(a.department) ? `Bu departmanın deposu: ${repoFor(a.department)} (çalışma dizinin). Soruları cevaplamak için depoyu okuyabilirsin; sahibi açıkça istemedikçe dosya değiştirme. ` : '') +
     'Use the company notes; say when something is not in them. If the owner asks you to look something up, use your tools. Nothing outbound is sent without the owner\'s explicit say-so.\n\n' +
     `${mcp.promptText(a.tools)}\n\nCOMPANY NOTES\n${businessContext(index)}\n\nRELEVANT NOTES\n${contextText(index, read)}\n\nYOUR RECENT TASKS\n${mine || '—'}`;
   const convo = (history || []).slice(-8).map(m => `${m.who === 'user' ? 'Owner' : a.name}: ${m.text}`).join('\n');
-  const { text: reply, tools } = await askX(system, (convo ? convo + '\n' : '') + `Owner: ${text}\n${a.name}:`, { maxTokens: 1200, model: modelFor({ agent: a.model, office: cfg.model }).model, effort: effortFor({ agent: a.effort, office: cfg.effort, model: modelFor({ agent: a.model, office: cfg.model }).model }).effort });
+  const { text: reply, tools } = await askX(system, (convo ? convo + '\n' : '') + `Owner: ${text}\n${a.name}:`, { maxTokens: 1200, model: modelFor({ agent: a.model, office: cfg.model }).model, effort: effortFor({ agent: a.effort, office: cfg.effort, model: modelFor({ agent: a.model, office: cfg.model }).model }).effort, cwd: repoFor(a.department) });
   return { reply, read, tools: toolKeys(tools), used: mcp.namesOf(tools) };
 }
 
@@ -459,7 +477,9 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/command-centre-v2.html' || url.pathname === '/dark')) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-      const page = fs.readFileSync(HTML, 'utf8');
+      // NITRO: the office's name, the pods' names and the seats' names ride in ahead of the bundle (src/data.js applies them)
+      const inject = `<script>window.OFFICE_NAME=${JSON.stringify(cfg.name)};window.OFFICE_DEPTS=${JSON.stringify(cfg.departments || {})};window.OFFICE_AGENTS=${JSON.stringify(Object.fromEntries(AGENTS.map(a => [a.id, a.name])))};</script>`;
+      const page = fs.readFileSync(HTML, 'utf8').replace('<body>', () => '<body>' + inject);
       return res.end(url.pathname === '/dark' ? page.replace('<body>', '<body class="dark">') : page); // /dark: the same file, opened in dark mode
     }
     if (url.pathname === '/api/health') return json(res, 200, { ok: true, version, backend, model: cfg.model, modelName: modelName(cfg.model), models: MODEL_KEYS, effort: cfg.effort || '', efforts: EFFORT_KEYS, name: cfg.name, brain: BRAIN, notes: graph.notes, depts: DEPT_KEYS,

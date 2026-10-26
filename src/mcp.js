@@ -162,7 +162,7 @@ export function initMcp({ scene, hud, LAYOUT, DEPTS, FR, R, connectors = null })
   const topconn = document.getElementById('topconn');
   const topImgs = {};
   if (topconn) {
-    topconn.innerHTML = `<span class="tc-lab"><span class="dot"></span>CONNECTED TO</span>`;
+    topconn.innerHTML = `<span class="tc-lab"><span class="dot"></span>BAĞLI ARAÇLAR</span>`;
     uniqKeys.forEach((k, i) => {
       const img = document.createElement('img');
       img.src = LOGOS[k].img;
@@ -283,7 +283,7 @@ export function initMcp({ scene, hud, LAYOUT, DEPTS, FR, R, connectors = null })
   const topmodels = document.getElementById('topmodels');
   const modelImgs = {};
   if (topmodels) {
-    topmodels.innerHTML = `<span class="tc-lab"><span class="dot"></span>RUNS HEADLESS ON</span>`;
+    topmodels.innerHTML = `<span class="tc-lab"><span class="dot"></span>MODEL</span>`;
     Object.keys(MODELS).forEach((k, i) => {
       const img = document.createElement('img');
       img.src = LOGOS[k].img;
@@ -360,7 +360,7 @@ export function initMcp({ scene, hud, LAYOUT, DEPTS, FR, R, connectors = null })
           for (const [k, img] of Object.entries(topImgs)) img.style.display = BY_DEPT[f].includes(k) ? '' : 'none';
           topconn.classList.add('focus');
           topconn.querySelector('.tc-lab').innerHTML =
-            `<span class="dot" style="background:${DEPTS[f].chip}"></span>${DEPTS[f].short} · CONNECTED TO`;
+            `<span class="dot" style="background:${DEPTS[f].chip}"></span>${DEPTS[f].short} · BAĞLI ARAÇLAR`;
         }
       } else {
         topconn.style.opacity = wireA;
@@ -368,7 +368,7 @@ export function initMcp({ scene, hud, LAYOUT, DEPTS, FR, R, connectors = null })
         if (stripDept !== null) {
           for (const img of Object.values(topImgs)) img.style.display = '';
           topconn.classList.remove('focus');
-          topconn.querySelector('.tc-lab').innerHTML = `<span class="dot"></span>CONNECTED TO`;
+          topconn.querySelector('.tc-lab').innerHTML = `<span class="dot"></span>BAĞLI ARAÇLAR`;
         }
       }
       stripDept = f;

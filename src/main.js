@@ -352,11 +352,11 @@ for (const k of [...DEPT_KEYS, 'brain']) {
   b.className = 'badge';
   b.innerHTML = `
     <div class="b-name"><span class="dot" style="background:${dept.chip}"></span>${dept.short}<span class="live"></span></div>
-    <div class="b-count">${k === 'brain' ? '<span class="b-num">∞</span><span class="b-lab">KNOWLEDGE</span>' : `<span class="b-num">${n}</span><span class="b-lab">AGENTS</span>`}</div>
+    <div class="b-count">${k === 'brain' ? '<span class="b-num">∞</span><span class="b-lab">BİLGİ</span>' : `<span class="b-num">${n}</span><span class="b-lab">AJAN</span>`}</div>
     <div class="b-metrics">${BB_ROWS[k].map((row, i) => `
       <div class="m-row"><span class="m-lab">${row[0]}</span><span class="m-val" data-m="${k}-${i}">${row[1]()}</span></div>`).join('')}
     </div>
-    <div class="b-appr" style="display:none">⚠ <span class="ap-n">1</span> WAITING APPROVAL</div>`;
+    <div class="b-appr" style="display:none">⚠ <span class="ap-n">1</span> ONAY BEKLİYOR</div>`;
   b.addEventListener('click', (e) => {
     if (e.target.closest('.b-appr')) { zoomToApproval(k); e.stopPropagation(); }
     else if (e.target.closest('.b-tasks') && tasks) { tasks.openFor(k); e.stopPropagation(); }
@@ -364,9 +364,9 @@ for (const k of [...DEPT_KEYS, 'brain']) {
   });
   if (k === 'brain') { // V3.6: a small tag names the etched floor and opens the graph (the big card stays retired)
     b.className = 'badge brainTag';
-    b.innerHTML = `<div class="b-name"><span class="dot" style="background:${dept.chip}"></span>THE BRAIN<b>${brain.state.notes.toLocaleString('en-NZ')}</b>NOTES</div>`;
+    b.innerHTML = `<div class="b-name"><span class="dot" style="background:${dept.chip}"></span>BEYİN<b>${brain.state.notes.toLocaleString('tr-TR')}</b>NOT</div>`;
     b.onclick = (e) => { e.stopPropagation(); brain.open(); };
-    b.title = 'open the Brain (G)';
+    b.title = 'Beyni aç (G)';
   }
   hud.appendChild(b);
   deptRT[k].badge = b;
@@ -729,11 +729,11 @@ function buildDeptRail(k) {
   rh.classList.remove('show');
   rh.innerHTML = `
     <div class="b-name"><span class="dot" style="background:${dept.chip}"></span>${dept.name}<span class="live"></span></div>
-    <div class="b-count"><span class="b-num">${n}</span><span class="b-lab">AGENTS</span></div>
+    <div class="b-count"><span class="b-num">${n}</span><span class="b-lab">AJAN</span></div>
     <div class="b-metrics">${BB_ROWS[k].map((row, i) => `
       <div class="m-row"><span class="m-lab">${row[0]}</span><span class="m-val" data-rm="${k}-${i}">${row[1]()}</span></div>`).join('')}</div>
     ${tasks ? tasks.rowHTML(k) : ''}
-    <div class="b-appr" style="display:${stuckIn(k).length ? 'flex' : 'none'}">⚠ <span class="ap-n">${stuckIn(k).length}</span> WAITING APPROVAL</div>`;
+    <div class="b-appr" style="display:${stuckIn(k).length ? 'flex' : 'none'}">⚠ <span class="ap-n">${stuckIn(k).length}</span> ONAY BEKLİYOR</div>`;
   const trow = rh.querySelector('.b-tasks');
   if (trow) trow.addEventListener('click', () => tasks.toggle());
   rh.querySelector('.b-appr').addEventListener('click', () => {

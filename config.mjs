@@ -20,6 +20,9 @@ export function loadConfig() {
   c.mcp = { allow: [], deny: [], departments: {}, ...(base.mcp || {}), ...(local.mcp || {}) };
   c.tools = { web: true, browser: true, ...(base.tools || {}), ...(local.tools || {}) }; // V3.2 (16 Sep): browser = Claude in Chrome
   c.teams = { enabled: true, max: 4, ...(base.teams || {}), ...(local.teams || {}) }; // V3.2 (16 Sep): Agent Teams
+  // NITRO: departments → { name, short, repo }. A department with a `repo` folder runs its agents as real coding sessions in that folder.
+  c.departments = { ...(base.departments || {}), ...(local.departments || {}) };
+  c.codeTimeout = +c.codeTimeout || 1800; // seconds per coding run (a real change takes longer than a draft)
   if (process.env.AO_NAME) c.name = process.env.AO_NAME;
   if (process.env.AO_BRAIN) c.brain = process.env.AO_BRAIN;
   if (process.env.PORT) c.port = +process.env.PORT;

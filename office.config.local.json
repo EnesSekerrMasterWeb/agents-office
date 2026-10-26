@@ -1,0 +1,18 @@
+{
+  "name": "Nitro Bilişim",
+  "brain": "./brain-nitro",
+  "port": 4520,
+  "model": "sonnet",
+  "timeout": 300,
+  "codeTimeout": 1800,
+  "tools": { "web": true, "browser": false },
+  "teams": { "enabled": true, "max": 4 },
+  "departments": {
+    "emails":    { "name": "EVERYTHING", "short": "EVERYTHING", "repo": "C:/Users/Eness/dev/sites/EveryThing" },
+    "sales":     { "name": "SİTE 2",     "short": "SİTE 2" },
+    "marketing": { "name": "SİTE 3",     "short": "SİTE 3" },
+    "ops":       { "name": "SİTE 4",     "short": "SİTE 4" },
+    "fin":       { "name": "SİTE 5",     "short": "SİTE 5" },
+    "delivery":  { "name": "SİTE 6",     "short": "SİTE 6" }
+  }
+}

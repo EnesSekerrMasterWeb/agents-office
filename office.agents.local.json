@@ -1,0 +1,45 @@
+{
+  "_about": "Nitro Bilişim: her pod bir web sitesi, her masa bir yazılım rolü. id/department/lead sabittir; name, role, does, brief serbestçe değişir.",
+  "agents": [
+    { "id": "elead", "name": "TEKNİK LİDER", "role": "Teknik Lider", "does": "Sitenin teknik sorumlusu: görevi doğru masaya yönlendirir, büyük işleri ekibe böler, kod kalitesini ve mimariyi gözetir.", "tools": [] },
+    { "id": "cmail", "name": "FRONTEND", "role": "Frontend Geliştirici", "does": "Arayüz, bileşenler, stil ve responsive düzen. HTML/CSS/JS ve kullanılan frontend çatısında değişiklik yapar.", "tools": [] },
+    { "id": "imail", "name": "BACKEND", "role": "Backend Geliştirici", "does": "Sunucu tarafı mantık, API uçları, veritabanı sorguları, kimlik doğrulama ve performans.", "tools": [] },
+    { "id": "vmail", "name": "SEO UZMANI", "role": "SEO Uzmanı", "does": "Başlık, meta, yapılandırılmış veri, site haritası, iç bağlantı ve Core Web Vitals iyileştirmeleri.", "tools": [] },
+    { "id": "kmail", "name": "QA TESTÇİ", "role": "Test Mühendisi", "does": "Değişiklikleri test eder, hata raporlar, testleri yazar ve koşar, regresyonları yakalar.", "tools": [] },
+
+    { "id": "lexi", "name": "TEKNİK LİDER", "role": "Teknik Lider", "does": "Sitenin teknik sorumlusu: görevi doğru masaya yönlendirir, büyük işleri ekibe böler, kod kalitesini gözetir.", "tools": [] },
+    { "id": "enzo", "name": "FRONTEND", "role": "Frontend Geliştirici", "does": "Arayüz, bileşenler, stil ve responsive düzen.", "tools": [] },
+    { "id": "ilm", "name": "BACKEND", "role": "Backend Geliştirici", "does": "Sunucu tarafı mantık, API, veritabanı, performans.", "tools": [] },
+    { "id": "pros", "name": "SEO UZMANI", "role": "SEO Uzmanı", "does": "Teknik SEO ve içerik SEO iyileştirmeleri.", "tools": [] },
+    { "id": "piper", "name": "İÇERİK EDİTÖRÜ", "role": "İçerik Editörü", "does": "Sayfa metinleri, blog yazıları, ürün açıklamaları; Türkçe ve çok dilli içerik.", "tools": [] },
+    { "id": "folo", "name": "QA TESTÇİ", "role": "Test Mühendisi", "does": "Test yazar ve koşar, hataları raporlar.", "tools": [] },
+
+    { "id": "mlead", "name": "TEKNİK LİDER", "role": "Teknik Lider", "does": "Sitenin teknik sorumlusu: yönlendirir, böler, kaliteyi gözetir.", "tools": [] },
+    { "id": "riley", "name": "FRONTEND", "role": "Frontend Geliştirici", "does": "Arayüz, bileşenler, stil ve responsive düzen.", "tools": [] },
+    { "id": "newt", "name": "BACKEND", "role": "Backend Geliştirici", "does": "Sunucu tarafı mantık, API, veritabanı, performans.", "tools": [] },
+    { "id": "gfx", "name": "TASARIMCI", "role": "UI Tasarımcısı", "does": "Görsel düzen, renk, tipografi, ikon ve görsel üretimi; tasarım sistemine uyum.", "tools": [] },
+    { "id": "ada", "name": "SEO UZMANI", "role": "SEO Uzmanı", "does": "Teknik SEO ve içerik SEO iyileştirmeleri.", "tools": [] },
+    { "id": "iggy", "name": "İÇERİK EDİTÖRÜ", "role": "İçerik Editörü", "does": "Sayfa metinleri ve blog içerikleri.", "tools": [] },
+    { "id": "vid", "name": "QA TESTÇİ", "role": "Test Mühendisi", "does": "Test yazar ve koşar, hataları raporlar.", "tools": [] },
+
+    { "id": "olead", "name": "TEKNİK LİDER", "role": "Teknik Lider", "does": "Sitenin teknik sorumlusu: yönlendirir, böler, kaliteyi gözetir.", "tools": [] },
+    { "id": "scout", "name": "FRONTEND", "role": "Frontend Geliştirici", "does": "Arayüz, bileşenler, stil ve responsive düzen.", "tools": [] },
+    { "id": "legal", "name": "BACKEND", "role": "Backend Geliştirici", "does": "Sunucu tarafı mantık, API, veritabanı, performans.", "tools": [] },
+    { "id": "comply", "name": "GÜVENLİK", "role": "Güvenlik Uzmanı", "does": "Güvenlik açıklarını tarar, bağımlılıkları günceller, başlıkları ve yetkilendirmeyi sıkılaştırır.", "tools": [] },
+    { "id": "report", "name": "SEO UZMANI", "role": "SEO Uzmanı", "does": "Teknik SEO ve içerik SEO iyileştirmeleri.", "tools": [] },
+    { "id": "dash", "name": "QA TESTÇİ", "role": "Test Mühendisi", "does": "Test yazar ve koşar, hataları raporlar.", "tools": [] },
+
+    { "id": "alead", "name": "TEKNİK LİDER", "role": "Teknik Lider", "does": "Sitenin teknik sorumlusu: yönlendirir, böler, kaliteyi gözetir.", "tools": [] },
+    { "id": "invo", "name": "FRONTEND", "role": "Frontend Geliştirici", "does": "Arayüz, bileşenler, stil ve responsive düzen.", "tools": [] },
+    { "id": "apay", "name": "BACKEND", "role": "Backend Geliştirici", "does": "Sunucu tarafı mantık, API, veritabanı, performans.", "tools": [] },
+    { "id": "recon", "name": "QA TESTÇİ", "role": "Test Mühendisi", "does": "Test yazar ve koşar, hataları raporlar.", "tools": [] },
+
+    { "id": "dlead", "name": "TEKNİK LİDER", "role": "Teknik Lider", "does": "Sitenin teknik sorumlusu: yönlendirir, böler, kaliteyi gözetir.", "tools": [] },
+    { "id": "pco", "name": "FRONTEND", "role": "Frontend Geliştirici", "does": "Arayüz, bileşenler, stil ve responsive düzen.", "tools": [] },
+    { "id": "qa", "name": "QA TESTÇİ", "role": "Test Mühendisi", "does": "Test yazar ve koşar, hataları raporlar.", "tools": [] },
+    { "id": "crep", "name": "BACKEND", "role": "Backend Geliştirici", "does": "Sunucu tarafı mantık, API, veritabanı, performans.", "tools": [] },
+    { "id": "cass", "name": "DEVOPS", "role": "DevOps Mühendisi", "does": "Derleme, dağıtım, CI/CD, sunucu yapılandırması ve izleme.", "tools": [] },
+    { "id": "dasst", "name": "TASARIMCI", "role": "UI Tasarımcısı", "does": "Görsel düzen, renk, tipografi ve görsel üretimi.", "tools": [] },
+    { "id": "ona", "name": "SEO UZMANI", "role": "SEO Uzmanı", "does": "Teknik SEO ve içerik SEO iyileştirmeleri.", "tools": [] }
+  ]
+}

@@ -264,10 +264,10 @@ export function initTasks(ctx) {
 
   /* ---------- badge rows (far-zoom layer): DOING · NEXT · DONE per pod ---------- */
   function rowHTML(k) {
-    return `<div class="b-tasks" data-tkrow="${k}" title="show ${DEPTS[k].short} in the task panel">
-      <span>DOING<b data-tk="${k}-doing">${deptTasks(k, 'doing').length}</b></span>
-      <span>NEXT<b data-tk="${k}-next">${deptTasks(k, 'next').length}</b></span>
-      <span>DONE<b data-tk="${k}-done">${doneCount[k]}</b></span></div>`;
+    return `<div class="b-tasks" data-tkrow="${k}" title="${DEPTS[k].short} görevlerini panelde göster">
+      <span>YAPIYOR<b data-tk="${k}-doing">${deptTasks(k, 'doing').length}</b></span>
+      <span>SIRADA<b data-tk="${k}-next">${deptTasks(k, 'next').length}</b></span>
+      <span>BİTTİ<b data-tk="${k}-done">${doneCount[k]}</b></span></div>`;
   }
   for (const k of DEPT_KEYS) deptRT[k].apprRow.insertAdjacentHTML('beforebegin', rowHTML(k));
   function syncBadges() {
@@ -329,7 +329,7 @@ export function initTasks(ctx) {
   };
   // the REPEAT picker (B1): cadence + time; "needs my OK" defaults on (D1)
   let repeat = false;
-  P_.cad.innerHTML = [['weekdays', 'Every weekday'], ['daily', 'Every day'], ['mon', 'Mondays'], ['tue', 'Tuesdays'], ['wed', 'Wednesdays'], ['thu', 'Thursdays'], ['fri', 'Fridays'], ['sat', 'Saturdays'], ['sun', 'Sundays'], ['hourly', 'Every hour, 9–5, weekdays']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  P_.cad.innerHTML = [['weekdays', 'Her iş günü'], ['daily', 'Her gün'], ['mon', 'Pazartesileri'], ['tue', 'Salıları'], ['wed', 'Çarşambaları'], ['thu', 'Perşembeleri'], ['fri', 'Cumaları'], ['sat', 'Cumartesileri'], ['sun', 'Pazarları'], ['hourly', 'Her saat, 9–17, iş günleri']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
   P_.rep.addEventListener('click', () => { repeat = !repeat; P_.rep.classList.toggle('on', repeat); P_.repRow.hidden = !repeat; updateHint(); if (repeat) P_.input.focus(); });
   P_.cad.addEventListener('change', () => { P_.at.disabled = P_.cad.value === 'hourly'; updateHint(); });
   P_.at.addEventListener('change', updateHint);
@@ -354,7 +354,7 @@ export function initTasks(ctx) {
     P_.ddName.textContent = DEPTS[k].short;
     P_.ddDot.style.background = DEPTS[k].chip;
     B_.dept.textContent = DEPTS[k].name.toUpperCase(); B_.dot.style.background = DEPTS[k].chip;
-    P_.input.placeholder = `Type a task for ${DEPTS[k].name.toLowerCase()}…`;
+    P_.input.placeholder = `${DEPTS[k].name} için bir görev yazın…`;
     updateHint();
   }
   // routing: keywords → the right agent in the chosen dept; fallback = the dept lead (or first agent)
@@ -699,7 +699,7 @@ export function initTasks(ctx) {
     return t;
   }
   // chips: filters with live counts
-  const CHIPS = [['all', 'All'], ['sched', 'Scheduled'], ['next', 'Backlog'], ['doing', 'In progress'], ['waiting', 'Waiting'], ['done', 'Done']];
+  const CHIPS = [['all', 'Tümü'], ['sched', 'Planlı'], ['next', 'Sırada'], ['doing', 'Devam ediyor'], ['waiting', 'Onay bekliyor'], ['done', 'Bitti']];
   function chipsHTML() {
     const scope = scoped();
     const cnt = st => st === 'all' ? scope.length : st === 'sched' ? scopedRoutines().length + scope.filter(t => t.state === 'scheduled').length : scope.filter(t => t.state === st).length;
@@ -767,7 +767,7 @@ export function initTasks(ctx) {
   }
   function render(structural) {
     const f = getFocused();
-    P_.scope.textContent = (f && f !== 'brain') ? DEPTS[f].name : 'WHOLE OFFICE';
+    P_.scope.textContent = (f && f !== 'brain') ? DEPTS[f].name : 'TÜM OFİS';
     P_.chips.innerHTML = chipsHTML();
     const list = scoped().filter(t => filter === 'all' || t.state === filter)
       .sort((a, b) => b.changedAt - a.changedAt).slice(0, 60);
@@ -839,13 +839,13 @@ export function initTasks(ctx) {
     return `<div class="tk sched${r.paused ? ' paused' : ''}" data-rid="${r.id}" data-dept="${r.dept}"><div class="tk-t">⏱ ${esc(r.title)}</div>
       <div class="tk-m"><span class="tk-av" style="border-color:${chip};background:${chip}55">${a.name[0]}</span><span>${a.name} · ${modelName(r.model || officeModel).toUpperCase()}</span><span class="tk-pct">${r.paused ? 'PAUSED' : esc(untilText(r.nextAt).toUpperCase())}</span></div></div>`;
   }
-  const COLS = [['sched', 'SCHEDULED'], ['next', 'BACKLOG'], ['doing', 'IN PROGRESS'], ['waiting', 'WAITING ON APPROVAL'], ['done', 'DONE']];
+  const COLS = [['sched', 'PLANLI'], ['next', 'SIRADA'], ['doing', 'DEVAM EDİYOR'], ['waiting', 'ONAY BEKLİYOR'], ['done', 'BİTTİ']];
   function companyHTML() {
     const tot = st => DEPT_KEYS.reduce((s, k) => s + deptTasks(k, st).length, 0);
     const doneAll = DEPT_KEYS.reduce((s, k) => s + doneCount[k], 0);
     return `<div class="bd-head">
         <span class="b-name"><span class="bd-title">Agents Office</span>Today's board</span>
-        <span class="bd-stats"><span>SCHEDULED<b>${routines.length + tot('scheduled')}</b></span><span>IN PROGRESS<b>${tot('doing')}</b></span><span>BACKLOG<b>${tot('next')}</b></span><span>WAITING<b>${tot('waiting')}</b></span><span>DONE<b>${doneAll}</b></span></span></div>
+        <span class="bd-stats"><span>PLANLI<b>${routines.length + tot('scheduled')}</b></span><span>DEVAM EDİYOR<b>${tot('doing')}</b></span><span>SIRADA<b>${tot('next')}</b></span><span>BEKLİYOR<b>${tot('waiting')}</b></span><span>BİTTİ<b>${doneAll}</b></span></span></div>
       <div class="bd-lanes"><div class="lh"></div>${COLS.map(([, lab]) => `<div class="lh">${lab}</div>`).join('')}
       ${DEPT_KEYS.map(k => {
         const d = DEPTS[k], n = AGENTS.filter(a => a.dept === k).length;

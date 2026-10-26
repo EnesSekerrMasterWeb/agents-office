@@ -99,12 +99,12 @@ export function initCalendar(ctx) {
         <div class="cv-r-t">${esc(r.title)}</div>
         <div class="cv-r-m">${esc(r.desc || describe(r.when))} · ${esc(a ? a.name : r.agent)}</div>
         <div class="cv-r-n">${r.paused ? '<span class="cv-paused">PAUSED</span>' : `next ${esc(untilText(r.nextAt))}`}${r.needsOk ? ' · waits for your OK' : ''}</div></div>`; }).join('')
-      : `<div class="cv-empty">No routines yet.<br>Click a day, write what should happen, switch on REPEAT.</div>`;
+      : `<div class="cv-empty">Henüz rutin yok.<br>Bir güne tıklayın, ne olacağını yazın, TEKRARLA'yı açın.</div>`;
   }
   function renderChips() {
     E.chips.innerHTML = DEPT_KEYS.map(k => `<button class="cv-chip${deptOn.has(k) ? ' on' : ''}" data-dept="${k}"><i style="background:${DEPTS[k].chip}"></i>${DEPTS[k].short}</button>`).join('') +
-      `<span class="cv-sep"></span><button class="cv-chip${showRoutines ? ' on' : ''}" data-tog="routines"><i class="rt">⏱</i>ROUTINES</button><button class="cv-chip${showDone ? ' on' : ''}" data-tog="done"><i class="tick">✓</i>DONE</button>` +
-      (onlyRoutine ? `<button class="cv-chip only on" data-tog="only">ONLY THIS ROUTINE ✕</button>` : '');
+      `<span class="cv-sep"></span><button class="cv-chip${showRoutines ? ' on' : ''}" data-tog="routines"><i class="rt">⏱</i>RUTİNLER</button><button class="cv-chip${showDone ? ' on' : ''}" data-tog="done"><i class="tick">✓</i>BİTTİ</button>` +
+      (onlyRoutine ? `<button class="cv-chip only on" data-tog="only">SADECE BU RUTİN ✕</button>` : '');
   }
 
   /* ---------- the popovers: a day (create), an event (details), "n more" (the whole day) ---------- */
@@ -119,12 +119,12 @@ export function initCalendar(ctx) {
     closePop(); popKind = 'create'; cell.classList.add('sel');
     if (currentDept && DEPT_KEYS.includes(currentDept())) lastDept = currentDept(); // the popover opens on the bar's department
     const d = new Date(dayKey + 'T00:00:00'), past = d.getTime() < startOfDay(Date.now());
-    E.pop.innerHTML = `<div class="cv-pop-h"><span class="lab">SCHEDULE FOR</span><b>${DOW[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTHS[d.getMonth()]}</b><span class="sp"></span><button class="cv-x" data-act="close">✕</button></div>
-      ${past ? '<div class="cv-note">That day has passed — pick today or a day after it.</div>' : ''}
+    E.pop.innerHTML = `<div class="cv-pop-h"><span class="lab">PLANLA</span><b>${DOW[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTHS[d.getMonth()]}</b><span class="sp"></span><button class="cv-x" data-act="close">✕</button></div>
+      ${past ? '<div class="cv-note">O gün geçti — bugünü ya da sonrasını seçin.</div>' : ''}
       <div class="cv-row"><select class="cv-dept">${DEPT_KEYS.map(k => `<option value="${k}"${k === lastDept ? ' selected' : ''}>${DEPTS[k].name}</option>`).join('')}</select><input type="time" class="cv-time" value="09:00"><select class="cv-model" title="which model runs it"><option value="">${esc(modelName(officeModel()).toUpperCase())}</option>${MODEL_KEYS.filter(k => k !== officeModel()).map(k => `<option value="${k}">${esc(modelName(k).toUpperCase())}</option>`).join('')}</select></div>
-      <textarea class="cv-text" rows="3" placeholder="What should happen that day?"></textarea>
-      <div class="cv-row"><button class="cv-rep" data-act="rep">REPEAT</button><select class="cv-cad" hidden>${CADENCES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><label class="cv-ok" hidden><input type="checkbox" class="cv-okc" checked> needs my OK</label><span class="sp"></span><button class="cv-go" data-act="go"${past ? ' disabled' : ''}>ADD</button></div>
-      <div class="cv-hint">${past ? '' : 'A task for this day — it runs at that time and lands in the panel. REPEAT makes it a routine from this date.'}</div>`;
+      <textarea class="cv-text" rows="3" placeholder="O gün ne olsun?"></textarea>
+      <div class="cv-row"><button class="cv-rep" data-act="rep">TEKRARLA</button><select class="cv-cad" hidden>${CADENCES.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select><label class="cv-ok" hidden><input type="checkbox" class="cv-okc" checked> onayım gerekir</label><span class="sp"></span><button class="cv-go" data-act="go"${past ? ' disabled' : ''}>EKLE</button></div>
+      <div class="cv-hint">${past ? '' : 'O güne bir görev — saati gelince çalışır ve panele düşer. TEKRARLA bu tarihten başlayan bir rutin yapar.'}</div>`;
     E.pop.hidden = false; place(E.pop, cell);
     const P = { dept: E.pop.querySelector('.cv-dept'), time: E.pop.querySelector('.cv-time'), model: E.pop.querySelector('.cv-model'), text: E.pop.querySelector('.cv-text'), rep: E.pop.querySelector('.cv-rep'), cad: E.pop.querySelector('.cv-cad'), ok: E.pop.querySelector('.cv-ok'), okc: E.pop.querySelector('.cv-okc'), go: E.pop.querySelector('.cv-go'), hint: E.pop.querySelector('.cv-hint') };
     let repeat = false;

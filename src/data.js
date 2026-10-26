@@ -17,14 +17,25 @@ export const TOKENS = {
 // V3.1 (5 Sep 2026, AJ): SUPPORT → EMAILS (same mint slot), new DELIVERY pod (sky) on the top axis.
 export const DEPT_KEYS = ['emails', 'sales', 'marketing', 'ops', 'fin', 'delivery'];
 export const DEPTS = {
-  emails:    { name: 'EMAILS',           short: 'EMAILS',  chip: '#5ADEB7', ink: '#1E9070', floor: '#E9F6EF' },
-  delivery:  { name: 'DELIVERY',         short: 'DELIVERY', chip: '#8FD3F4', ink: '#2E86AB', floor: '#E6F4FB' },
-  sales:     { name: 'SALES',            short: 'SALES',   chip: '#EADC8F', ink: '#A08A1E', floor: '#F6F1DA' },
-  marketing: { name: 'MARKETING',        short: 'MARKETING', chip: '#E69393', ink: '#C46060', floor: '#FAE9E7' },
-  fin:       { name: 'FINANCE',          short: 'FINANCE', chip: '#98A5EF', ink: '#5B66CE', floor: '#EAEDFA' },
-  ops:       { name: 'OPERATIONS',       short: 'OPERATIONS', chip: '#BFA2E3', ink: '#7449A9', floor: '#F2ECFA' },
-  brain:     { name: 'THE BRAIN',        short: 'THE BRAIN', chip: '#D1DECD', ink: '#4C7A57', floor: '#E9EFE4' },
+  emails:    { name: 'E-POSTA',          short: 'E-POSTA',  chip: '#5ADEB7', ink: '#1E9070', floor: '#E9F6EF' },
+  delivery:  { name: 'TESLİMAT',         short: 'TESLİMAT', chip: '#8FD3F4', ink: '#2E86AB', floor: '#E6F4FB' },
+  sales:     { name: 'SATIŞ',            short: 'SATIŞ',   chip: '#EADC8F', ink: '#A08A1E', floor: '#F6F1DA' },
+  marketing: { name: 'PAZARLAMA',        short: 'PAZARLAMA', chip: '#E69393', ink: '#C46060', floor: '#FAE9E7' },
+  fin:       { name: 'FİNANS',           short: 'FİNANS', chip: '#98A5EF', ink: '#5B66CE', floor: '#EAEDFA' },
+  ops:       { name: 'OPERASYON',        short: 'OPERASYON', chip: '#BFA2E3', ink: '#7449A9', floor: '#F2ECFA' },
+  brain:     { name: 'BEYİN',            short: 'BEYİN', chip: '#D1DECD', ink: '#4C7A57', floor: '#E9EFE4' },
 };
+// NITRO: department labels from office.config.json → departments { key: { name, short } } (the server injects
+// window.OFFICE_DEPTS into the page; serve.mjs calls applyDepts itself), and seat names from the roster.
+export function applyDepts(map) {
+  if (!map) return;
+  for (const k of Object.keys(map)) {
+    if (!DEPTS[k] || !map[k] || !map[k].name) continue;
+    DEPTS[k].name = String(map[k].name).toUpperCase();
+    DEPTS[k].short = String(map[k].short || map[k].name).toUpperCase();
+  }
+}
+export function applyAgentNames(map) { if (!map) return; for (const a of AGENTS) if (map[a.id]) a.name = String(map[a.id]); }
 
 // 35 agents (V3.4, 7 Sep 2026: every department has a lead). grid = [col,row] desk slot on the department plinth.
 export const AGENTS = [
@@ -172,3 +183,4 @@ export const WORKLINES = {
 
 // INDUSTRY PROFILE (12 Sep 2026): a per-industry demo file rewrites pods, seats, rows, asks and screen lines in place. No-op without window.PROFILE.
 applyData({ DEPTS, AGENTS, BILLBOARDS, APPROVAL_ASKS, APPROVAL_BY_AGENT, WORKLINES });
+if (typeof window !== 'undefined') { applyDepts(window.OFFICE_DEPTS); applyAgentNames(window.OFFICE_AGENTS); }
