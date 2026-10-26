@@ -5,7 +5,7 @@ Bu klasör ofisin ortak hafızasıdır. Ajanlar her görevden önce buradaki not
 ## Şirket
 - Nitro Bilişim: web siteleri geliştiren ve yöneten bir bilişim şirketi.
 - Birden fazla site var; ofiste her pod bir siteye karşılık gelir.
-- Sitelerin depoları `C:/Users/Eness/dev/sites/<site>` altında durur ve `office.config.local.json` içindeki `departments.<pod>.repo` ile poda bağlanır.
+- Sitelerin depoları `C:/Users/Efekan/source/<site>` altında durur ve `office.config.local.json` içindeki `departments.<pod>.repo` ile poda bağlanır.
 
 ## Çalışma kuralları
 - Her şey Türkçe yazılır: görev başlıkları, raporlar, commit mesajı önerileri.
@@ -13,4 +13,5 @@ Bu klasör ofisin ortak hafızasıdır. Ajanlar her görevden önce buradaki not
 - Sahibi onaylamadan dışarıya hiçbir şey gönderilmez.
 
 ## Siteler
-- [[EveryThing]] — ilk pod (deneme deposu).
+- [[obdtalk]] — obdTalk, nopCommerce (ASP.NET Core); pod OBDTALK.
+- [[nitrobilisim-store]] — Nitro Store, Smartstore 6.3 (ASP.NET Core + PostgreSQL); pod NİTRO STORE.
