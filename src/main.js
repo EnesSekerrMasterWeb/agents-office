@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { TOKENS, DEPTS, DEPT_KEYS, AGENTS, LAYOUT, WORKLINES, APPROVAL_ASKS, APPROVAL_BY_AGENT } from './data.js';
 import { hasScreens, makeScreen } from './screens.js'; // live screens (14 Sep): no-op without window.SCREENS
+const SERVED = location.protocol.startsWith('http'); // NITRO: served by serve.mjs → a real office; the demo's fake billboard numbers stay off
 import { V1, FILE_GEN, STATS, KPIS, P, rnd, ri, person, money } from './v1data.js';
 import { PROFILE, profileRows, profileTickKpi, profileMockup, applyTopbar } from './profile.js';
 import {
@@ -361,7 +362,7 @@ for (const k of [...DEPT_KEYS, 'brain']) {
   b.innerHTML = `
     <div class="b-name"><span class="dot" style="background:${dept.chip}"></span>${dept.short}<span class="live"></span></div>
     <div class="b-count">${k === 'brain' ? '<span class="b-num">∞</span><span class="b-lab">BİLGİ</span>' : `<span class="b-num">${n}</span><span class="b-lab">AJAN</span>`}</div>
-    <div class="b-metrics">${BB_ROWS[k].map((row, i) => `
+    <div class="b-metrics">${SERVED ? '' : BB_ROWS[k].map((row, i) => `
       <div class="m-row"><span class="m-lab">${row[0]}</span><span class="m-val" data-m="${k}-${i}">${row[1]()}</span></div>`).join('')}
     </div>
     <div class="b-appr" style="display:none">⚠ <span class="ap-n">1</span> ONAY BEKLİYOR</div>`;
@@ -606,7 +607,7 @@ function ensureChat(id) {
   const v = R[id].v1;
   chatHist[id] = [
     { who: 'agent', text: v.greeting },
-    { who: 'work', i: '⏺', text: 'session attached — live work stream below' },
+    { who: 'work', i: '⏺', text: 'oturum bağlı — canlı iş akışı aşağıda' },
   ];
   if (FILE_GEN[id] && !(tasks && tasks.isLive())) chatHist[id].push({ who: 'file', ...FILE_GEN[id]() }); // demo-only sample file; a live office shows real deliverables
 }
@@ -738,7 +739,7 @@ function buildDeptRail(k) {
   rh.innerHTML = `
     <div class="b-name"><span class="dot" style="background:${dept.chip}"></span>${dept.name}<span class="live"></span></div>
     <div class="b-count"><span class="b-num">${n}</span><span class="b-lab">AJAN</span></div>
-    <div class="b-metrics">${BB_ROWS[k].map((row, i) => `
+    <div class="b-metrics">${SERVED ? '' : BB_ROWS[k].map((row, i) => `
       <div class="m-row"><span class="m-lab">${row[0]}</span><span class="m-val" data-rm="${k}-${i}">${row[1]()}</span></div>`).join('')}</div>
     ${tasks ? tasks.rowHTML(k) : ''}
     <div class="b-appr" style="display:${stuckIn(k).length ? 'flex' : 'none'}">⚠ <span class="ap-n">${stuckIn(k).length}</span> ONAY BEKLİYOR</div>`;
@@ -844,22 +845,22 @@ function sendChat(text) {
       return;
     }
     const rv = tasks && tasks.isLive() && text.match(/^\s*revise\s*[:\-–]\s*(.+)$/i); // LIVE: "revise: …" re-runs the last deliverable
-    if (rv && tasks.revise(id, rv[1].trim())) { chatPush(id, { who: 'agent', text: 'On it — revising now. It will land here when it is ready.' }); return; }
+    if (rv && tasks.revise(id, rv[1].trim())) { chatPush(id, { who: 'agent', text: 'Başlıyorum, düzeltiyorum. Hazır olunca burada görünecek.' }); return; }
     const tr = tasks && tasks.handleChat(id, text); // "add task: …" / "what's on the board"
     if (tr) { chatPush(id, { who: 'agent', text: tr }); return; }
     if (tasks && tasks.isLive()) { // LIVE: a real conversation with the agent, grounded in the brain
-      chatPush(id, { who: 'work', i: '…', text: `${r.a.name} is thinking` });
+      chatPush(id, { who: 'work', i: '…', text: `${r.a.name} düşünüyor` });
       fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ agent: id, text, history: chatHist[id].filter(m => m.who === 'user' || m.who === 'agent').slice(-8) }) })
         .then(async res => { if (!res.ok) throw new Error((await res.json()).error || res.statusText); return res.json(); })
         .then(j => {
-          const h = chatHist[id]; const k = h.findIndex(m => m.who === 'work' && m.text === `${r.a.name} is thinking`); if (k >= 0) h.splice(k, 1);
+          const h = chatHist[id]; const k = h.findIndex(m => m.who === 'work' && m.text === `${r.a.name} düşünüyor`); if (k >= 0) h.splice(k, 1);
           chatPush(id, { who: 'agent', text: j.reply });
           if (j.routines && tasks.refresh) tasks.refresh(); // a routine was set, paused, run or deleted in chat
           if (j.read) for (const n of j.read.slice(0, 2)) brain.readNote(id, n);
           if (j.tools && j.tools.length) mcp.onToolsUsed(id, j.tools);
         })
-        .catch(e => chatPush(id, { who: 'agent', text: `I couldn't reach Claude (${e.message}).` }));
+        .catch(e => chatPush(id, { who: 'agent', text: `Claude'a ulaşamadım (${e.message}).` }));
       return;
     }
     const hit = (r.v1.chat || []).find(c => c.k.some(k => low.includes(k)));
@@ -1367,9 +1368,9 @@ function applyRoster(agents) {
     r.pill.innerHTML = (r.a.lead ? '<span class="star">★</span>' : '') + esc(a.name);
     r.v1 = r.v1 || {};
     r.v1.role = a.role || r.v1.role || ''; r.v1.tagline = a.does || r.v1.tagline || '';
-    r.v1.greeting = `${a.does || 'I am ' + a.name + '.'} Give me a task in the bar on the right, or ask me something here.` +
-      (a.interviewer && a.setUp === false ? ` Nothing in this department is yours yet: say "set up" and I will ask you five questions about how it works here, then write it down for the team.` : '');
-    r.v1.chips = a.interviewer && a.setUp === false ? ['set up', 'What can you do for me?', 'What tools can you use?'] : ['What are you working on?', 'What can you do for me?', 'What tools can you use?'];
+    r.v1.greeting = `${a.does || 'Ben ' + a.name + '.'} Sağdaki çubuktan görev verin ya da buradan sorun.` +
+      (a.interviewer && a.setUp === false ? ` Bu departman henüz kurulmadı: "set up" yazın, burada işlerin nasıl yürüdüğünü beş soruyla öğrenip ekip için not edeyim.` : '');
+    r.v1.chips = a.interviewer && a.setUp === false ? ['set up', 'Benim için ne yapabilirsin?', 'Hangi araçları kullanabilirsin?'] : ['Şu an ne üzerinde çalışıyorsun?', 'Benim için ne yapabilirsin?', 'Hangi araçları kullanabilirsin?'];
     if (chatHist[a.id] && chatHist[a.id][0] && chatHist[a.id][0].who === 'agent') chatHist[a.id][0].text = r.v1.greeting;
     if (modalOpen === a.id) openAgentRail(a.id, modalTab, false);
   }
@@ -1378,7 +1379,7 @@ function applyRoster(agents) {
 tasks = initTasks({
   hud, R, deptRT, RAIL_SIDE, spawnEmote, chatPush, chatHist, feedPush, zoomToApproval, enterFocus, openAgent, esc,
   brainWrite: (id, title) => brain.write(id, title), brain,
-  onLive: (h) => { document.querySelector('#topbar .brand .ver').textContent = 'BETA'; document.title = `${h.name} — Agents Office`; brain.setOwner(h.name); brain.setQuiet(true); applyRoster(h.agents); },
+  onLive: (h) => { document.querySelector('#topbar .brand .ver').textContent = 'BETA'; document.title = `${h.name} — Ajan Ofisi`; brain.setOwner(h.name); brain.setQuiet(true); applyRoster(h.agents); },
   onTools: (agentId, keys) => mcp.onToolsUsed(agentId, keys),
   requestApproval, setStuck: setStuckLive,
   onUsage: (u) => { if (mcp && mcp.setUsage) mcp.setUsage(u); }, // V3.6: the plan's gauge in the top bar

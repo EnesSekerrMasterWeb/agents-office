@@ -24,6 +24,18 @@ import { DEPTS, AGENTS, DEPT_KEYS } from './data.js';
 import { P, rnd, ri } from './v1data.js';
 import { applyTasks, PROFILE, titleCase } from './profile.js';
 import { parseWhen, describe, nextRun, fromPicker, untilText } from './when.js';
+// NITRO: untilText stays English (check.mjs asserts it); the cards show it in Turkish through this map.
+const TR_DAY = { Sun: 'Paz', Mon: 'Pzt', Tue: 'Sal', Wed: 'Çar', Thu: 'Per', Fri: 'Cum', Sat: 'Cmt' };
+function untilTr(ts) {
+  const s = untilText(ts); let m;
+  if (s === 'now') return 'şimdi';
+  if (s === 'in under a minute') return '1 dakikadan az';
+  if ((m = s.match(/^in (\d+) min$/))) return `${m[1]} dk sonra`;
+  if ((m = s.match(/^at (.+)$/))) return `bugün ${m[1]}`;
+  if ((m = s.match(/^tomorrow (.+)$/))) return `yarın ${m[1]}`;
+  if ((m = s.match(/^(\w{3}) (.+)$/)) && TR_DAY[m[1]]) return `${TR_DAY[m[1]]} ${m[2]}`;
+  return s;
+}
 import { initCalendar } from './calendar.js'; // V3.2.1 (16 Sep 2026): the calendar on P
 import { MODEL_KEYS, MODELS, DEFAULT_MODEL, modelName, normModel, FROM_TEXT , EFFORT_KEYS, EFFORT_NAME, normEffort, effortName, effortFor } from './models.js';
 
@@ -115,17 +127,17 @@ applyTasks({ POOL, KEYS, CHAINS, SEGMENTS, AGENTS }); // INDUSTRY PROFILE (12 Se
 function fill(s, v) { return s.replace('{co}', v.co).replace('{n}', v.n).replace('{segment}', v.segment); }
 function vars() { return { co: rnd(P.co), n: ri(6, 40), segment: rnd(SEGMENTS) }; }
 function timeStr(ts) {
-  return new Date(ts).toLocaleTimeString('en-NZ', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+  return new Date(ts).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 }
-function span(ms) { // "4 min" · "1 h 12 m" · "3 h"
+function span(ms) { // "4 dk" · "1 sa 12 dk" · "3 sa"
   const m = Math.max(0, Math.round(ms / 60000));
-  if (m < 1) return 'just now';
-  if (m < 60) return m + ' min';
+  if (m < 1) return 'az önce';
+  if (m < 60) return m + ' dk';
   const h = Math.floor(m / 60), r = m % 60;
-  return r ? `${h} h ${r} m` : `${h} h`;
+  return r ? `${h} sa ${r} dk` : `${h} sa`;
 }
 const agentOf = id => AGENTS.find(a => a.id === id);
-const STATE_LABEL = { next: 'Backlog', doing: 'In progress', waiting: 'Waiting', done: 'Done', sched: 'Scheduled', scheduled: 'Scheduled' }; // scheduled (V3.2.1): a task with a date, not yet fired
+const STATE_LABEL = { next: 'Sırada', doing: 'Devam ediyor', waiting: 'Onay bekliyor', done: 'Bitti', sched: 'Planlı', scheduled: 'Planlı' }; // scheduled (V3.2.1): a task with a date, not yet fired
 
 export function initTasks(ctx) {
   const { R, deptRT, spawnEmote, chatPush, chatHist, feedPush, zoomToApproval, enterFocus, openAgent,
@@ -215,16 +227,16 @@ export function initTasks(ctx) {
     const a = agentOf(t.agent);
     if (t.piece) { // V3.2 (16 Sep): a teammate's piece — in their own chat, then it walks back to the lead
       const L = agentOf(t.leadId), parent = tasks.find(x => x.id === t.parent);
-      chatPush(t.agent, { who: 'file', icon: t.error ? '⚠' : '📄', name: slug(t.title) + '.md', meta: `my piece · passed to ${L ? L.name : 'the lead'} · ${timeStr(t.doneAt)} · click to view`, content: t.result });
-      if (!t.error) chatPush(t.agent, { who: 'agent', text: `My piece of "${parent ? parent.title : t.title}" is done and with ${L ? L.name : 'the lead'}${t.used && t.used.length ? `. Used ${t.used.join(', ')}` : ''}.` });
-      feedPush(R[t.agent], '📄', `Piece done → ${L ? L.name : 'lead'}: ${t.title}`);
-      if (L && R[L.id]) { spawnEmote(R[L.id], '📋'); feedPush(R[L.id], '📋', `Piece in from ${a.name}: ${t.title}`); }
+      chatPush(t.agent, { who: 'file', icon: t.error ? '⚠' : '📄', name: slug(t.title) + '.md', meta: `benim parçam · ${L ? L.name : 'lidere'} iletildi · ${timeStr(t.doneAt)} · görmek için tıklayın`, content: t.result });
+      if (!t.error) chatPush(t.agent, { who: 'agent', text: `"${parent ? parent.title : t.title}" işindeki parçam bitti, ${L ? L.name : 'liderde'}${t.used && t.used.length ? `. Kullandım: ${t.used.join(', ')}` : ''}.` });
+      feedPush(R[t.agent], '📄', `Parça bitti → ${L ? L.name : 'lider'}: ${t.title}`);
+      if (L && R[L.id]) { spawnEmote(R[L.id], '📋'); feedPush(R[L.id], '📋', `${a.name} parçasını getirdi: ${t.title}`); }
       return;
     }
     chatPush(t.agent, { who: 'file', icon: t.error ? '⚠' : '📄', name: (t.note || slug(t.title)) + '.md',
-      meta: `${t.error ? 'could not complete' : t.approved ? 'sent after your OK · saved to your brain' : 'delivered · saved to your brain'} · ${timeStr(t.doneAt)} · click to view`, content: t.result });
-    if (!t.error) chatPush(t.agent, { who: 'agent', text: `Done — "${t.title}"${t.routine ? ` (routine, ${t.when}${t.late ? ', ran late' : ''})` : ''} is ready above${t.team?.members?.length ? ` — the team was ${membersText(t)} and me` : ''}${t.read && t.read.length ? ` (I read ${t.read.slice(0, 3).join(', ')})` : ''}${t.used && t.used.length ? `. Used ${t.used.join(', ')}` : ''}. Say "revise: …" and I'll change it.` });
-    feedPush(R[t.agent], '📄', `Delivered: ${t.title}`);
+      meta: `${t.error ? 'tamamlanamadı' : t.approved ? 'onayınızdan sonra gönderildi · beyne kaydedildi' : 'teslim edildi · beyne kaydedildi'} · ${timeStr(t.doneAt)} · görmek için tıklayın`, content: t.result });
+    if (!t.error) chatPush(t.agent, { who: 'agent', text: `Bitti — "${t.title}"${t.routine ? ` (rutin, ${t.when}${t.late ? ', geç çalıştı' : ''})` : ''} yukarıda hazır${t.team?.members?.length ? ` — ekip ${membersText(t)} ve bendim` : ''}${t.read && t.read.length ? ` (okuduklarım: ${t.read.slice(0, 3).join(', ')})` : ''}${t.used && t.used.length ? `. Kullandım: ${t.used.join(', ')}` : ''}. "revise: …" yazarsanız değiştiririm.` });
+    feedPush(R[t.agent], '📄', `Teslim edildi: ${t.title}`);
     if (brain && t.read) for (const n of t.read.slice(0, 2)) brain.readNote(t.agent, n);
   }
   function brainSend(id) { // the Brain drops a fresh job into the agent's backlog
@@ -344,7 +356,7 @@ export function initTasks(ctx) {
   const leadOf = k => AGENTS.find(x => x.dept === k && x.lead) || AGENTS.filter(x => x.dept === k)[0];
   P_.team.addEventListener('click', () => { teamOn = !teamOn; P_.team.classList.toggle('on', teamOn); updateHint(); if (teamOn) P_.input.focus(); });
   function resetTeam() { teamOn = false; P_.team.classList.remove('on'); }
-  const teamBit = t => t.team?.members?.length ? ` · <span class="tp-team-chip">TEAM ${t.team.members.length + 1}</span>` : t.piece ? ' · <span class="tp-team-chip">PIECE</span>' : '';
+  const teamBit = t => t.team?.members?.length ? ` · <span class="tp-team-chip">TEAM ${t.team.members.length + 1}</span>` : t.piece ? ' · <span class="tp-team-chip">PIECE</span>' : ''; // chip text stays English: check.mjs asserts it
   const membersText = t => (t.team?.members || []).map(id => agentOf(id)?.name || id).join(', ');
   let dept = 'marketing', filter = 'all';
   P_.menu.innerHTML = DEPT_KEYS.map(k => `<button data-k="${k}"><span class="dot" style="background:${DEPTS[k].chip}"></span>${DEPTS[k].name}</button>`).join('');
@@ -435,10 +447,10 @@ export function initTasks(ctx) {
           team: st.team ? { lead: st.team.lead, members: [] } : undefined });
         resetModel(); resetTeam();
         touch(t, 'added'); spawnEmote(R[t.agent], st.team ? '⚑' : '📋');
-        say(st.team ? `Added — <b>${agentOf(t.agent).name}</b> has it and is splitting it across the team` : `Added — <b>${agentOf(t.agent).name}</b> has it${st.why ? ' · ' + esc(st.why) : ''}`);
+        say(st.team ? `Eklendi — <b>${agentOf(t.agent).name}</b> aldı, ekibe bölüyor` : `Eklendi — <b>${agentOf(t.agent).name}</b> aldı${st.why ? ' · ' + esc(st.why) : ''}`);
         setTimeout(() => { if (!P_.input.value) P_.hint.classList.remove('on'); }, 7000);
       } catch (e) {
-        say(`Claude couldn't take it (${esc(e.message)}). Kept it on the board.`, 'err');
+        say(`Claude alamadı (${esc(e.message)}). Panoda tutuldu.`, 'err');
         const { agent: a } = route(k, text); addTask(a.id, text, 'you');
       }
       P_.input.disabled = false; P_.add.disabled = false; P_.input.blur(); // hand the keys back to the office
@@ -475,22 +487,22 @@ export function initTasks(ctx) {
   async function submitRoutine(rt, raw) {
     const k = dept;
     if (!RT_DEPTS.includes(k)) { say(`<span class="tp-amber">${esc(rtRefuse(k))}</span>`, 'err'); return; }
-    if (rt.needsDay) { say('Which day? Say "every Monday …" or "Mon and Thu …".', 'err'); return; }
-    if (rt.needsTime) { say('What time? Add "at 8am" or "at 17:30", or press REPEAT and pick one.', 'err'); return; }
+    if (rt.needsDay) { say('Hangi gün? "her pazartesi …" ya da "pzt ve per …" deyin.', 'err'); return; }
+    if (rt.needsTime) { say('Saat kaçta? "8\'de" ya da "17:30\'da" ekleyin, ya da TEKRARLA\'ya basıp seçin.', 'err'); return; }
     const text = (rt.text || raw).trim().replace(/[.!]+$/, '');
-    if (!text) { say('What should happen? The sentence has a time but no task.', 'err'); return; }
+    if (!text) { say('Ne yapılsın? Cümlede saat var ama görev yok.', 'err'); return; }
     if (live) {
       P_.input.disabled = true; P_.add.disabled = true;
-      say('Setting the routine — Claude is naming the agent…', 'busy');
+      say('Rutin kuruluyor — Claude ajanı seçiyor…', 'busy');
       try {
         const r = await fetch(API + '/routines', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dept: k, text, when: rt.when, needsOk: rt.picker ? P_.okc.checked : undefined, model: chosenModel() || undefined, effort: effortSend() }) });
         const j = await r.json(); if (!r.ok) throw new Error(j.error || r.statusText);
         setRoutines([...routines.filter(x => x.id !== j.routine.id), j.routine]);
         const a = agentOf(j.routine.agent);
-        say(`Routine set — <b>${a.name}</b> · ${esc(j.routine.desc)} · next ${esc(untilText(j.routine.nextAt))}${j.routine.needsOk ? ' · waits for your OK' : ' · read-only, no OK needed'}${j.guessed ? ` · "${esc(j.guessed)}" taken as ${j.routine.when.at}` : ''}`);
-        P_.input.value = ''; resetModel(); spawnEmote(R[a.id], '⏱'); feedPush(R[a.id], '⏱', `New routine: ${j.routine.title} (${j.routine.desc})`);
+        say(`Rutin kuruldu — <b>${a.name}</b> · ${esc(j.routine.desc)} · sonraki ${esc(untilTr(j.routine.nextAt))}${j.routine.needsOk ? ' · onayınızı bekler' : ' · salt okunur, onay gerekmez'}${j.guessed ? ` · "${esc(j.guessed)}" ${j.routine.when.at} sayıldı` : ''}`);
+        P_.input.value = ''; resetModel(); spawnEmote(R[a.id], '⏱'); feedPush(R[a.id], '⏱', `Yeni rutin: ${j.routine.title} (${j.routine.desc})`);
         filter = 'sched'; render(true); poll();
-      } catch (e) { say(`Claude couldn't set it (${esc(e.message)}).`, 'err'); }
+      } catch (e) { say(`Claude kuramadı (${esc(e.message)}).`, 'err'); }
       P_.input.disabled = false; P_.add.disabled = false; P_.input.blur();
       return;
     }
@@ -720,14 +732,14 @@ export function initTasks(ctx) {
     const who = (f && f !== 'brain') ? a.name : `${a.name} · ${DEPTS[t.dept].short}`;
     switch (t.state) {
       case 'next': {
-        const src = t.piece ? `team piece from ${agentOf(t.leadId)?.name || 'the lead'}` : t.routine ? `routine · ${t.when}${t.late ? ' · <span class="tp-late">late · was due ' + timeStr(t.due) + '</span>' : ''}` : t.by === 'you' ? (t.live ? 'added by you · live' : 'added by you') : t.last === 'handoff' && t.from ? `from ${agentOf(t.from).name}` : t.revised ? 'sent back to revise' : 'from the Brain';
+        const src = t.piece ? `ekip parçası · ${agentOf(t.leadId)?.name || 'lider'}` : t.routine ? `rutin · ${t.when}${t.late ? ' · <span class="tp-late">geç · ' + timeStr(t.due) + ' olmalıydı</span>' : ''}` : t.by === 'you' ? (t.live ? 'siz eklediniz · canlı' : 'siz eklediniz') : t.last === 'handoff' && t.from ? `${agentOf(t.from).name} devretti` : t.revised ? 'düzeltmeye geri gönderildi' : 'Beyinden';
         const w = now - t.addedAt;
-        return `${who} · ${w < 60000 ? 'just added' : 'waiting ' + span(w)} · ${src}${teamBit(t)}${modelBit(t)}`;
+        return `${who} · ${w < 60000 ? 'yeni eklendi' : span(w) + ' bekliyor'} · ${src}${teamBit(t)}${modelBit(t)}`;
       }
-      case 'doing': return `${who}${t.live ? (t.approved === undefined && t.draftAt ? ' · sending with Claude' : t.team?.members?.length ? ' · leading the team with Claude' : ' · working with Claude') : t.agent === 'vid' ? ' · rendering' : t.teamHold ? ' · waiting on the pieces' : ''}${t.routine ? ' · routine' : ''}${teamBit(t)}${modelBit(t)}`;
-      case 'waiting': return `<span class="tp-amber">waiting ${span(now - t.changedAt)} for your tick</span> · ${who}${t.routine ? ' · routine draft' : ''}${teamBit(t)}${modelBit(t)}`;
-      case 'scheduled': return `${who} · runs ${esc(untilText(t.dueAt))} · ${new Date(t.dueAt).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })} ${timeStr(t.dueAt)}${t.needsOk ? ' · waits for your OK' : ''}${teamBit(t)}${modelBit(t)}`;
-      case 'done': return `${who} · done ${timeStr(t.doneAt)}${t.approved ? (t.live ? ' · sent after your OK' : ' · approved') : ''}${t.late ? ' · <span class="tp-late">ran late</span>' : ''}${teamBit(t)}${modelBit(t)}${t.live ? (t.error ? ' · <span class="tp-amber">failed</span>' : ' · <span class="tp-res">result ready →</span>') : ''}`;
+      case 'doing': return `${who}${t.live ? (t.approved === undefined && t.draftAt ? ' · Claude ile gönderiyor' : t.team?.members?.length ? ' · Claude ile ekibi yönetiyor' : ' · Claude ile çalışıyor') : t.agent === 'vid' ? ' · işliyor' : t.teamHold ? ' · parçaları bekliyor' : ''}${t.routine ? ' · rutin' : ''}${teamBit(t)}${modelBit(t)}`;
+      case 'waiting': return `<span class="tp-amber">${span(now - t.changedAt)}dır onayınızı bekliyor</span> · ${who}${t.routine ? ' · rutin taslağı' : ''}${teamBit(t)}${modelBit(t)}`;
+      case 'scheduled': return `${who} · ${esc(untilTr(t.dueAt))} çalışacak · ${new Date(t.dueAt).toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' })} ${timeStr(t.dueAt)}${t.needsOk ? ' · onayınızı bekler' : ''}${teamBit(t)}${modelBit(t)}`;
+      case 'done': return `${who} · bitti ${timeStr(t.doneAt)}${t.approved ? (t.live ? ' · onayınızdan sonra gönderildi' : ' · onaylandı') : ''}${t.late ? ' · <span class="tp-late">geç çalıştı</span>' : ''}${teamBit(t)}${modelBit(t)}${t.live ? (t.error ? ' · <span class="tp-amber">başarısız</span>' : ' · <span class="tp-res">sonuç hazır →</span>') : ''}`;
     }
     return who;
   }
