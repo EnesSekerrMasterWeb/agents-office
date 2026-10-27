@@ -1,5 +1,5 @@
 {
-  "name": "Nitro Bilişim",
+  "name": "NitroTeam",
   "brain": "./brain-nitro",
   "port": 4520,
   "model": "sonnet",
@@ -8,8 +8,8 @@
   "tools": { "web": true, "browser": false },
   "teams": { "enabled": true, "max": 4 },
   "departments": {
-    "emails":    { "name": "OBDTALK",     "short": "OBDTALK", "repo": "C:/Users/Efekan/source/obdtalk.com" },
-    "sales":     { "name": "NİTRO STORE", "short": "STORE",   "repo": "C:/Users/Efekan/source/nitrobilisim-store" },
+    "emails":    { "name": "OBDTALK",     "short": "OBDTALK", "repo": "C:/source/obdtalk.com" },
+    "sales":     { "name": "NİTRO STORE", "short": "STORE",   "repo": "C:/source/Smartstore" },
     "marketing": { "name": "SİTE 3",      "short": "SİTE 3" },
     "ops":       { "name": "SİTE 4",      "short": "SİTE 4" },
     "fin":       { "name": "SİTE 5",      "short": "SİTE 5" },

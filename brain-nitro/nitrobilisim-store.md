@@ -1,6 +1,6 @@
 # Nitro Store
 
-- Depo: `C:/Users/Efekan/source/nitrobilisim-store` (GitHub: Nitro-Mekatronik/nitrobilisim-store). Kaynak kod `nitrobilisim-store/` alt klasöründe (`Smartstore.sln`).
+- Depo: `C:/source/Smartstore` (GitHub: Nitro-Mekatronik/nitrobilisim-store). Kaynak kod depo kökünde (`Smartstore.sln`, `src/`).
 - Teknoloji: Smartstore 6.3 (ASP.NET Core, Entity Framework Core, PostgreSQL), Docker (`docker-compose.yml`, `docker-compose.postgres.yml`).
 - Pod: NİTRO STORE (`sales` anahtarı).
 - Amaç: nitrobilisim.com.tr, otomotiv arıza tespit cihazları, ECU programlama ve araç test ekipmanları satan çevrimiçi mağaza.

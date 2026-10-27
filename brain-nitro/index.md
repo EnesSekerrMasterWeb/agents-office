@@ -5,7 +5,7 @@ Bu klasör ofisin ortak hafızasıdır. Ajanlar her görevden önce buradaki not
 ## Şirket
 - Nitro Bilişim: web siteleri geliştiren ve yöneten bir bilişim şirketi.
 - Birden fazla site var; ofiste her pod bir siteye karşılık gelir.
-- Sitelerin depoları `C:/Users/Efekan/source/<site>` altında durur ve `office.config.local.json` içindeki `departments.<pod>.repo` ile poda bağlanır.
+- Sitelerin depoları `C:/source/<klasör>` altında durur (obdTalk: `C:/source/obdtalk.com`, Nitro Store: `C:/source/Smartstore`) ve `office.config.local.json` içindeki `departments.<pod>.repo` ile poda bağlanır.
 
 ## Çalışma kuralları
 - Her şey Türkçe yazılır: görev başlıkları, raporlar, commit mesajı önerileri.
