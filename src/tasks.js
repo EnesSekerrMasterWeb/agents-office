@@ -133,6 +133,8 @@ export function initTasks(ctx) {
   // LIVE mode (served by serve.mjs): the bar routes through Claude, agents produce real
   // deliverables saved as notes in the brain, and tasks persist. Opened as a file it stays demo.
   let live = false;
+  // NITRO: served by serve.mjs (http) → only real tasks on screen, no demo theatre. Opened as a file → the demo plays.
+  const SERVED = location.protocol.startsWith('http');
   const API = '/api';
   const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48);
 
@@ -232,8 +234,8 @@ export function initTasks(ctx) {
     return t;
   }
 
-  /* ---------- seed a believable morning ---------- */
-  {
+  /* ---------- seed a believable morning (demo only; a served office shows real work) ---------- */
+  if (!SERVED) {
     const now = performance.now(), wall = Date.now();
     for (const a of AGENTS) {
       const r = R[a.id];
@@ -682,6 +684,7 @@ export function initTasks(ctx) {
           const t = mk({ agent: st.agent, title: st.title, text: st.text, plan: st.plan, by: 'you', live: true, sid: st.id, state: 'done',
             doneAt: st.doneAt, changedAt: st.doneAt, addedAt: st.addedAt, result: st.result, read: st.read, note: st.note, tools: st.tools || [], used: st.used || [], error: !!st.error, last: 'done' });
           if (st.team) syncTeam(t, st, true);
+          doneCount[t.dept]++; // NITRO: the pod's BİTTİ badge counts real finished work (the demo seed used to fill it)
           deliver(t);
         } else reconcile(st); // next, doing (the server may be running it), waiting for your OK, scheduled for a date — pick it up again
       }
@@ -959,6 +962,7 @@ export function initTasks(ctx) {
       } else {
         const nx = agentTasks(id, 'next').sort((a, b) => a.addedAt - b.addedAt)[0];
         if (nx) { start(nx, now); r.nextBrainAt = null; }
+        else if (SERVED) { /* NITRO: no theatre jobs from the Brain on a served office — idle desks stay idle */ }
         else if (!r.nextBrainAt) r.nextBrainAt = now + 6000 + Math.random() * 16000;
         else if (now > r.nextBrainAt) { r.nextBrainAt = null; brainSend(id); }
       }

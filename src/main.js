@@ -1244,8 +1244,8 @@ function tickSim(now, dt) {
       r.warn.scale.set(k, k, 1);
     }
   }
-  // ambient emoji work-bubbles pop over random desks every beat or two
-  if (now > nextEmoteAt) {
+  // ambient emoji work-bubbles pop over random desks every beat or two (demo only — NITRO: a live office pops icons for real events)
+  if (now > nextEmoteAt && !(tasks && tasks.isLive())) {
     const ids = Object.keys(R).filter(id => R[id].state === 'working');
     if (ids.length) spawnEmote(R[ids[Math.floor(Math.random() * ids.length)]],
       rnd(['💬', '✉️', '📈', '💡', '✓', '📞', '🔍', '📎']));
@@ -1264,8 +1264,8 @@ function tickSim(now, dt) {
     }
     nextApprovalAt = now + 50000 + Math.random() * 40000;
   }
-  // agent events drive everything — feed, chat streams, billboard metrics (nothing is static)
-  if (now > nextMetricAt) {
+  // agent events drive everything — feed, chat streams, billboard metrics (nothing is static). NITRO: demo only; a live office's feed is real
+  if (now > nextMetricAt && !(tasks && tasks.isLive())) {
     fireAgentEvent();
     nextMetricAt = now + 2600 + Math.random() * 3800;
   }
